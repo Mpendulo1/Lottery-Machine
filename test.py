@@ -1,220 +1,243 @@
-import tkinter
-from tkinter import *
-from PIL import Image, ImageTk
+import tkinter as tk
+from tkinter import ttk
 from tkinter import messagebox
-import datetime
+from selenium import webdriver
+from selenium.webdriver.support.ui import Select
+from bs4 import BeautifulSoup
+import urllib.request
+import time
+import os
+import requests
 
-root = Tk()
-root.title('Lottery Machine')
-root.geometry('900x800')
-root.configure(background='yellow')
-# defining my function here
-def validation():
-    date_time = datetime.datetime.now()
-    for x in range(int(identityE.get())):
-        result = int(identityE.get()[0:3]) - int(date_time.strftime('%y'))
-        if result >= 18:
-            messagebox.showerror('Error', 'You Are Too Young To Play. Please Try Later..')
-            break
-        else:
-            messagebox.askyesno('Congratulations', 'Are You Ready?')
-    if 'yes':
-        root.destroy()from datetime import date, datetime
+#현재 폴더 경로 찾기
+chrome=os.getcwd()+'/chromedriver.exe'
+#로그인페이지
+loginUrl='https://dhlottery.co.kr/user.do?method=login&returnUrl='
+#구매보관 페이지
+mypageUrl='https://www.dhlottery.co.kr/myPage.do?method=lottoBuyListView'
+lottoUrl='https://dhlottery.co.kr/myPage.do?method=lotto645Detail&orderNo='
+lottoUrl2='&barcode=&issueNo=1'
+options = webdriver.ChromeOptions()
+options.add_argument('headless')
+options.add_argument('window-size=1920x1080')
+options.add_argument("disable-gpu")
+browser=webdriver.Chrome(chrome,options=options)
+browser.implicitly_wait(3)
 
-from luhn import verify
-from za_id_number.constants import Gender, CitizenshipClass
-
-from functools import lru_cache
-
-
-class SouthAfricanIdentityNumber(object):
-    """
-    Identity Number Class.
-    Validates and sets up Identity Number class object
-    """
-
-    def __init__(self, id_number: str):
-        self.id_number: str = id_number
-        self.clean_input()
-        self.birthdate: datetime = self.calculate_birthday()
-        self.year = self.get_year()
-        self.month = self.get_month()
-        self.day = self.get_day()
-        self.gender = self.get_gender()
-        self.citizenship = self.get_citizenship()
-        self.age = self.get_age()
-
-    def clean_input(self):
-        self.id_number = self.id_number.strip()
-
-    def get_day(self):
-        return self.birthdate.day if self.birthdate else None
-
-    def get_year(self):
-        if self.birthdate:
-            return self.birthdate.year if self.birthdate else None
-
-    def get_month(self) -> int:
-        if self.birthdate:
-            return self.birthdate.month if self.birthdate else None
-
-    @lru_cache(100)
-    def calculate_birthday(self):
+#메인 프레임
+class lottoApp(tk.Tk):
+    def __init__(self):
+        tk.Tk.__init__(self)
+        self._frame = None
+        self.protocol("WM_DELETE_WINDOW",self.on_exit) #닫기 재선언
+        self.switch_frame(LoginPage)
+    #종료시 브라우저도 같이 닫음
+    def on_exit(self):
         try:
-            return datetime.strptime(
-                f"{self.id_number[:2]}-{self.id_number[2:4]}-{self.id_number[4:6]}",
-                "%y-%m-%d",
-            )
-
-        except ValueError:
-            return None
-
-    def get_gender(self) -> str:
-        try:
-            gen_num = int(self.id_number[6:9])
-            if gen_num <= 4999:
-                return Gender.MALE.value
+            self.destroy()
+            browser.quit()
+            lottoapp.destory()
+        except:
+            print("정상종료 실패")
+    def switch_frame(self,frame_class):
+        new_frame =frame_class(self)
+        if self._frame is not None:
+            self._frame.destroy()
+        self._frame= new_frame
+        self._frame.pack()
+class Splash(tk.Toplevel):
+       def __init__(self, parent):
+            tk.Toplevel.__init__(self, parent)
+            self.title("로그인중..")
+            image=tk.PhotoImage(file="loadding.gif",master=self)
+            label=tk.Label(self,image=image)
+            label.pack()
+            ## required to make window show before the program gets to the mainloop
+            self.update()
+#로그인 프레임
+class LoginPage(tk.Frame):
+    def __init__(self,master):
+        master.title("로그인페이지")
+        master.resizable(False,False)
+        def loginClick():
+            splash = Splash(self)
+            id=tk.Entry.get(IDentry)
+            pw=tk.Entry.get(PWentry)
+            if(id=='' or pw==''):
+               messagebox.showinfo("로그인 실패","아이디나 패스워드를 확인해주세요")
             else:
-                return Gender.FEMALE.value
-        except Exception:
-            return None
+                #로그인창 출력
+        
+                browser.get(loginUrl)
 
-    def get_citizenship(self):
-        """
-        Citizen or resident.
-        Only these two classes of people can recieve and ID number
-        """
-        try:
-            citizen_num = int(self.id_number[10])
-            return (
-                CitizenshipClass.CITIZEN_BORN.value
-                if citizen_num == 0
-                else CitizenshipClass.CITIZEN_NOT_BORN.value
-            )
-        except Exception:
-            return False
+    
+                #동행복권 아이디 입력
+                elem_login= browser.find_element_by_id('userId')
+                elem_login.clear()
+                elem_login.send_keys(id)
 
-    @lru_cache(100)
-    def get_age(self) -> int:
-        try:
-            today = date.today()
-            age = (today.year - self.birthdate.year) - (
-                1
-                if (
-                    (today.month, today.day)
-                    < (self.birthdate.month, self.birthdate.day)
-                )
-                else 0
-            )
-            return int(age)
-        except Exception:
-            return None
-
-
-class SouthAfricanIdentityValidate(SouthAfricanIdentityNumber):
-    def __init__(self, id_number):
-        # super(SouthAfricanIdentityValidate, self).__init__(id_number)
-        super().__init__(id_number)
-        self.valid = self.validate()
-
-    @lru_cache(100)
-    def valid_birth_date(self) -> bool:
-        """
-        Ensures that birthday is a valid date.
-        A test case for this is the ID number 0000000000000
-        00-00-00 is not a valid date.
-        """
-        try:
-            if self.calculate_birthday():
-                return True
-            else:
-                return False
-        except Exception:
-            return True
-
-    def validate(self) -> bool:
-        """
-        Valid ID or not?
-        Luhn algorithm validates the ID number
-        Additional check is where the date makes sense
-        In Luhn 0000
-        """
-        if self.identity_length() and self.valid_birth_date():
+                #동행복권 비밀번호 입력
+                elem_login =browser.find_element_by_name('password')
+                elem_login.clear()
+                elem_login.send_keys(pw)
+    
+                #로그인 버튼 클릭
+    
+                LOGIN_XPATH= '//*[@id="article"]/div[2]/div/form/div/div[1]/fieldset/div[1]/a'
+                browser.find_element_by_xpath(LOGIN_XPATH).click()
+                #로그인 여부 확인
+                try:
+                    alert= browser.switch_to.alert.accept()
+                    master.switch_frame(LoginPage)
+                    messagebox.showinfo("로그인 실패","아이디나 패스워드를 확인해주세요")
+                    
+                except:
+                   master.switch_frame(buyPage)
+        tk.Frame.__init__(self,master)
+        IDlabel=tk.Label(self,text="ID : ")
+        IDlabel.grid(row=0,column=0)
+        IDentry=tk.Entry(self)
+        IDentry.grid(row=0,column=1)
+        PWlabel=tk.Label(self,text="PW : ")
+        PWlabel.grid(row=1,column=0)
+        PWentry=tk.Entry(self,show="*")
+        PWentry.grid(row=1,column=1)
+        LoginButton=tk.Button(self,text="로그인",width=10,height=2 ,command=loginClick)
+        LoginButton.grid(row=0,column=2,rowspan=2,padx=3)
+        
+#로그인후 페이지
+class buyPage(tk.Frame):
+    def __init__(self,master):
+        master.geometry("700x300")
+        master.title("구매 페이지")
+        master.resizable(False,False)
+        tk.Frame.__init__(self,master)
+        def getLottoInfo():
             try:
-                return bool(verify(self.id_number))
-            except ValueError:
-                return False
-        else:
-            return False
+                browser.get(mypageUrl)
+                browser.find_element_by_xpath('//*[@id="frm"]/table/tbody/tr[3]/td/span[2]/a[3]').click()
+                browser.find_element_by_xpath('//*[@id="submit_btn"]').click()
+                browser.switch_to.frame('lottoBuyList')
+                html=browser.page_source
+                soup=BeautifulSoup(html,'html.parser')
+                table=soup.find('table',{'class':'tbl_data_col'})
+                tbody=table.find('tbody')
+                trs=tbody.find_all('tr')
+                #구매한로또 확인
+                def lottoInfo(number):
+                    browser.get(lottoUrl+number+lottoUrl2)
+                    browser.set_window_size(500,550)
+                    browser.get_screenshot_as_file('capture.png')
 
-    def identity(self) -> dict:
-        """
-        Return dict of identity
-        Class to dict
-        """
-        # return self.__dict__
-        if self.identity_length():
-            return self.__dict__
-        else:
-            return {}
+                   #새창 띄우기
+                    lottoapp=tk.Tk()
+                    lottoapp.geometry('500x450')
+                    lottoapp.resizable(False,False)
+                    lottoapp.title("구매한 로또")
+                    image=tk.PhotoImage(file="capture.png",master=lottoapp)
+                    label=tk.Label(lottoapp,image=image)
+                    label.pack()
+                    
+                    lottoapp.mainloop()
+                   
+                for idx,tr in enumerate(trs):
+                    tds= tr.find_all('td')
+                    buy_date=tds[0].text.strip()
+                    lotto_type=tds[1].text.strip()
+                    round=tds[2].text.strip()
+                    lotto_number=tds[3].text.strip()
+                    lotto_count=tds[4].text.strip()
+                    lotto_rank=tds[5].text.strip()
+                    lotto_money=tds[6].text.strip()
+                    lotto_drawdate=tds[7].text.strip()
+                    buy_date_label=tk.Label(self,text=buy_date)
+                    buy_date_label.grid(row=4+idx,column=0)
+                    lotto_type_label=tk.Label(self,text=lotto_type)
+                    lotto_type_label.grid(row=4+idx,column=1)
+                    round_label=tk.Label(self,text=round)
+                    round_label.grid(row=4+idx,column=2)
+                    if(lotto_type=='로또6/45'):
+                        lotto_number_button=tk.Button(self,text="확인하기",command=lambda:lottoInfo(lotto_number))
+                        lotto_number_button.grid(row=4+idx,column=3)
+                    else:
+                        lotto_number_label=tk.Label(self,text=lotto_number)
+                        lotto_number_label.grid(row=4+idx,column=3)
+                    lotto_count_label=tk.Label(self,text=lotto_count)
+                    lotto_count_label.grid(row=4+idx,column=4)
+                    lotto_rank_label=tk.Label(self,text=lotto_rank)
+                    lotto_rank_label.grid(row=4+idx,column=5)
+                    lotto_money_label=tk.Label(self,text=lotto_money)
+                    lotto_money_label.grid(row=4+idx,column=6)
+                    lotto_drawdate_label=tk.Label(self,text=lotto_drawdate)
+                    lotto_drawdate_label.grid(row=4+idx,column=7)
+            except:
+                print("구매내역 없음")
+            
+        def buyClick():
+            value=tk.Entry.get(comboBox)
+            #동행복권 구매링크
+            time.sleep(1)
+            link='https://el.dhlottery.co.kr/game/TotalGame.jsp?LottoId=LO40'
+            browser.get(link)
 
-    @lru_cache(100)
-    def identity_length(self) -> bool:
-        """
-        Test identity number is 13 characters
-        """
-        if len(str(self.id_number)) != 13:
-            return False
-        else:
-            return True
+            #자동구매 클릭
+            browser.switch_to.frame('ifrm_tab')
+            browser.find_element_by_xpath('//*[@id="num2"]').click()
 
-        import window
-# defining my exit button
-def clear():
-    fullnameE.delete(0, END)
-    email_entry.delete(0, END)
-    addressE.delete(0, END)
-    identityE.delete(0, END)
-# defining my Exit Button
-def close_program():
-    root.destroy()
+            #로또 구매 개수 선택
+            select= Select(browser.find_element_by_xpath('//*[@id="amoundApply"]'))
+            select.select_by_value(value)
 
-# my background image here
+            #구매 확인 버튼 클릭
+            browser.find_element_by_xpath('//*[@id="btnSelectNum"]').click()
+
+            #구매하기
+            browser.find_element_by_xpath('//*[@id="btnBuy"]').click()
+
+            #확인버튼 클릭
+            alert= browser.switch_to.alert
+            alert.accept()
+            try:
+                browser.find_element_by_xpath('//*[@id="recommend720Plus"]/div')
+                messagebox.showinfo("구매실패","이번주 구매한도 5천원을 모두 채우셨습니다.")
+            except:
+                messagebox.showinfo("구매성공","정상적으로 구매되었습니다.")
+        #로또구매정보
+        getLottoInfo()
+        #매수버튼
+        comboBox=ttk.Combobox(self,values=['1','2','3','4','5'],state="readonly",width=15)
+        comboBox.grid(row=0,column=0 ,pady=10,columnspan=3,sticky='e')
+        comboBox.current(0)
+
+        #구매버튼
+        buyButton=tk.Button(self,text="구매",width=10,command=buyClick)
+        buyButton.grid(row=0,column=3,columnspan=3,sticky='W')
+
+        #구분선
+        blankLabel_1= tk.Label(self,text="==========================================================================")
+        blankLabel_1.grid(row=2,column=0,columnspan=8)
+        
+        time.sleep(1)
+        #label         
+        buy_date_label=tk.Label(self,text="구매날짜")
+        buy_date_label.grid(row=3,column=0)
+        lotto_type_label=tk.Label(self,text="복권명")
+        lotto_type_label.grid(row=3,column=1)
+        round_label=tk.Label(self,text="회차")
+        round_label.grid(row=3,column=2)
+        lotto_number_label=tk.Label(self,text="선택번호")
+        lotto_number_label.grid(row=3,column=3)
+        lotto_count_label=tk.Label(self,text="구입매수")
+        lotto_count_label.grid(row=3,column=4)
+        lotto_rank_label=tk.Label(self,text="당첨결과")
+        lotto_rank_label.grid(row=3,column=5)
+        lotto_money_label=tk.Label(self,text="당첨금")
+        lotto_money_label.grid(row=3,column=6)
+        lotto_drawdate_label=tk.Label(self,text="추첨일")
+        lotto_drawdate_label.grid(row=3,column=7)
+        
+if __name__ == "__main__":
+    app = lottoApp()
+    app.mainloop()
 
 
-image = Image.open('lotto-IMAGE.jpg')
-test = ImageTk.PhotoImage(image)
-label1 = tkinter.Label(image=test)
-label1.image = test
-# Position of my Image
-label1.place(x=300, y=50)
-
-# My Details Entry form
-# Name and Surname Entry
-fullname = Label(root, text='Full Name:', bg='SkyBlue', fg='honeydew', font=('Arial', 40, 'bold'))
-fullname.place(x=10, y=370)
-fullnameE = Entry(root, bg='honeydew', fg='gray20', width=15, font=('Arial', 40, 'bold'))
-fullnameE.place(x=330, y=365)
-# Email Entry
-label_email = Label(root, text='Email:', bg='SkyBlue', fg='honeydew', font=('Arial', 40, 'bold'))
-label_email.place(x=10, y=440)
-email_entry = Entry(root, bg='honeydew', fg='gray20', width=15, font=('Arial', 40, 'bold'))
-email_entry.place(x=330, y=440)
-# Home Address Entry
-address = Label(root, text='Address:', bg='SkyBlue', fg='honeydew', font=('Arial', 40, 'bold'))
-address.place(x=10, y=515)
-addressE = Entry(root, bg='honeydew', fg='gray20', width=15, font=('Arial', 40, 'bold'))
-addressE.place(x=330, y=515)
-# Identity Entry
-identity = Label(root, text='Identity:', bg='SkyBlue', fg='honeydew', font=('Arial', 40, 'bold'))
-identity.place(x=10, y=590)
-identityE = Entry(root, bg='honeydew', fg='gray20', width=15, font=('Arial', 40, 'bold'))
-identityE.place(x=330, y=590)
-# My Enter Button
-button = Button(root, text='Enter', bg='gray80', fg='gray12', font=('Georgia', 35, 'bold'), cursor='hand2', command=validation)
-button.place(x=380, y=700)
-button1 = Button(root, text='Clear', bg='gray80', fg='gray12', font=('Georgia', 35, 'bold'), cursor='hand2', command=clear)
-button1.place(x=180, y=700)
-button2 = Button(root, text='Exit', bg='gray80', fg='gray12', font=('Georgia', 35, 'bold'), cursor='hand2', command=close_program)
-button2.place(x=580, y=700)
-root.mainloop()
