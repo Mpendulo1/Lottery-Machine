@@ -3,6 +3,7 @@ from tkinter import *
 from PIL import Image, ImageTk
 from tkinter import messagebox
 import random
+from playsound import playsound
 
 
 root = Tk()
@@ -31,45 +32,72 @@ def lotto_plus():
         if empty_list[x] == lotto_random_numbers[x]:
             y += 1
     if y == 6:
+        playsound('jackpot.mp3')
         messagebox.Message('JACKPOT', 'Congratulations, You Have Won R1,000,000.00')
+        root.destroy()
+        import Claim
     elif y == 5:
         messagebox.Message('Congrats', 'You Have Won R8,584.00')
+        root.destroy()
+        import Claim
     elif y == 4:
         messagebox.showinfo('Hurray', 'You Have Won R2,384.00')
+        root.destroy()
+        import Claim
     elif y == 3:
         messagebox.showinfo('Hurray', 'You Have Won R100.50')
+        root.destroy()
+        import Claim
     elif y == 2:
-        messagebox.showinfo('Nice Try', 'You Got Two Numbers Correct')
-    elif y < 2:
+        messagebox.showinfo('Nice Try', 'You Got Two Numbers Correct: R20.00')
+        root.destroy()
+        import Claim
+    elif y < 1:
         messagebox.showinfo('Hard Luck', 'Only One Number That Matches: Lotto Plus ' + str(lotto_random_numbers) + '\nYour Numbers: ' + str(empty_list))
 
     else:
+        playsound('Oh no.mp3')
         messagebox.askretrycancel('Tough Luck!', "NO MATCHING NUMBERS FOUND")
+
+
         return
 
 def power_ball():
     y = 0
-    lotto_random_numbers = sorted(random.sample(range(10, 49), 6))
+    lotto_random_numbers = sorted(random.sample(range(0, 49), 6))
     for i in range(0, 6):
         if empty_list2[i] == lotto_random_numbers[i]:
             y += 1
     if y == 6:
+        playsound('jackpot.mp3')
         messagebox.Message('JACKPOT!!!!', 'Congratulations, You have won R1,000,000.00')
+        root.destroy()
+        import Claim
+
     elif y == 5:
         messagebox.Message('CONGRATS', 'You have won R8,584.00')
+        root.destroy()
+        import Claim
     elif y == 4:
         messagebox.showinfo('Hurray''You have won R2,384.00')
+        root.destroy()
+        import Claim
     elif y == 3:
         messagebox.showinfo('Hurray', 'You have won R100.50')
+        root.destroy()
+        import Claim
     elif y == 2:
-        messagebox.showinfo('Nice Try', 'You got Two numbers correct')
-    elif y < 2:
+        messagebox.showinfo('Nice Try', 'You got Two numbers correct: R20.00')
+        root.destroy()
+        import Claim
+    elif y < 1:
+         playsound('Oh no.pm3')
          messagebox.showinfo('Hard Luck', 'No Numbers That Match: Power Ball ' + str(lotto_random_numbers) + '\nYour Numbers: ' + str(empty_list2))
 
     else:
+        playsound('Oh no.mp3')
         messagebox.askretrycancel('Tough Luck!', "NO MATCHING NUMBERS FOUND")
         return
-
 
 
 def lotto():
@@ -81,21 +109,30 @@ def lotto():
         if empty_list3[j] == lotto_random_numbers[j]:
             y += 1
     if y == 6:
+        playsound('jackpot.mp3')
         messagebox.Message('JACKPOT', 'Congratulations, You Have Won R1,000,000.00')
     elif y == 5:
         messagebox.Message('Congrats', 'You Have Won R8,584.00')
+        root.destroy()
+        import Claim
     elif y == 4:
         messagebox.showinfo('Hurray', 'You Have Won R2,384.00')
+        root.destroy()
+        import Claim
     elif y == 3:
         messagebox.showinfo('Hurray', 'You Have Won R100.50')
+        root.destroy()
+        import Claim
     elif y == 2:
-        messagebox.showinfo('Nice Try', 'You Got Two Numbers Correct')
-    elif y < 2:
+        messagebox.showinfo('Nice Try', 'You Got Two Numbers Correct: R20.00')
+        root.destroy()
+        import  Claim
+    elif y < 1:
         messagebox.showinfo('Hard Luck', 'No Numbers That Match: Lotto ' + str(lotto_random_numbers) + '\nYour Numbers: ' + str(empty_list3))
     else:
+        playsound('Oh no.mp3')
         messagebox.askretrycancel('Tough Luck!', "NO MATCHING NUMBERS FOUND")
         return
-
 
 
 def number_selector(number):

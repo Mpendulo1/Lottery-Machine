@@ -1,3 +1,4 @@
+# Mpendulo Khoza
 import tkinter
 from tkinter import *
 from PIL import Image, ImageTk
@@ -10,21 +11,43 @@ root.geometry('900x800')
 root.configure(background='yellow')
 # defining my function here
 def validation():
-    date_time = datetime.datetime.now()
-    for x in range(int(identityE.get())):
-        result = int(date_time.strftime('%y')) - int(identityE.get()[0:2])
-        if result >= 18:
-            m = messagebox.askquestion('Congratulations', 'Are You Ready?')
-            if m == 'yes':
+
+    if "@" in email_entry.get():
+        messagebox.showinfo("Email Address", "Correct Email")
+
+    else:
+        messagebox.showinfo(title='Alert!', message="Please enter valid email address!")
+        email_entry.delete(0, END)
+
+    try:
+
+        TEXT_file = open('TEXT_file.txt', 'r+')
+        TEXT_file.writelines('FullName: ' + str(fullnameE.get()) + '\n')
+        TEXT_file.writelines('Email: ' + str(email_entry.get()) + '\n')
+        TEXT_file.writelines('Address: ' + str(addressE.get()) + '\n')
+        TEXT_file.writelines('Identity:' + str(identityE.get()) + '\n')
+        TEXT_file.close()
+
+        for x in range(int(identityE.get())):
+            date_time = datetime.datetime.now()
+            res = int(date_time.strftime("%y")) - int(identityE.get()[0:2])
+            if res >= 18:
+                messagebox.showinfo("Status", "You are qualified to play Lotto")
                 root.destroy()
                 import window
-            elif m == 'no':
-                pass
-        else:
-            messagebox.showerror('Error', 'You Are Too Young To Play. Please Try Later..')
-            break
+            elif len(identityE.get()) != 13:
+                messagebox.showerror("Error", "Not a valid ID number")
+                break
+            else:
+                messagebox.showerror("Error", "You are too young to play Lotto")
+                break
+    except ValueError:
+        if identityE.get() != int:
+            messagebox.showerror("Error", "The id number must be an integer")
+        elif fullnameE.get() != str:
+            messagebox.showerror("Error", "Name must be a string or in letters")
 
-# defining my exit button
+
 def clear():
     fullnameE.delete(0, END)
     email_entry.delete(0, END)
